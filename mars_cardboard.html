@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Mars</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link href='http://fonts.googleapis.com/css?family=Roboto:400,900' rel='stylesheet' type='text/css'>
+		<link href="mars_aws.css" rel="stylesheet" type="text/css">
+	</head>
+	<body>
+		<!--div id="targetleft" ></div-->
+		<div id="targetright">Loading</div>
+		<div id="container"><br /><br /><br /><br /><br />Generating world...</div>
+		<script src="https://sdk.amazonaws.com/js/aws-sdk-2.1.14.min.js"></script>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r70/three.min.js"></script>
+
+		<script src="js/effects/StereoEffect.js"></script>
+		<script src="js/controls/FirstPersonControls.js"></script>
+		<script src="js/controls/DeviceOrientationControls.js"></script>
+		<script src="js/ImprovedNoise.js"></script>
+		<script src="js/Detector.js"></script>
+		<!--script src="js/libs/stats.min.js"></script-->
+		<script src="js/MarsSkyShader.js"></script>
+		<script src="js/Mirror.js"></script>
+		
+		<script src="js/DuneShader.js"></script>
+
+		<script src="js/loaders/DDSLoader.js"></script>
+		<script src="js/loaders/MTLLoader.js"></script>
+		<script src="js/loaders/OBJMTLLoader.js"></script>
+
+
+		<script type="x-shader/x-vertex" id="scarybumpy">		
+				// switch on high precision floats
+			#ifdef GL_ES
+			precision highp float;
+			#endif
+			
+			uniform float amplitude;
+			attribute float displacement;
+			varying vec3 vNormal;
+			varying vec3 vPosition;
+
+			void main() {
+
+				vNormal = normal;
+				vPosition = position + normal;
+				
+				gl_Position = projectionMatrix *
+							  modelViewMatrix *
+							  vec4(vPosition,1.0);
+			}
+		</script>
+
+		<script type="x-shader/x-fragment" id="scaryfragment">
+	
+			#ifdef GL_ES
+			precision highp float;
+			#endif
+			
+			// same name and type as VS
+			varying vec3 vNormal;
+			varying vec3 vPosition;
+
+			float rand(vec2 co)
+			{
+			   return fract(sin(dot(co.xy,vec2(12.9898,78.233))) * 43758.5453);
+			}
+			void main() {
+			  // 0 -> 1 rather than -1 -> 1
+			  vec3 light = vec3(0.5, 0.2, -1.0);
+			  // ensure it's normalized
+			  light = normalize(light);
+			  // calculate the dot product of
+			  // the light to the vertex normal
+			  float dProd = max(0.0, dot(vNormal, light));
+		  
+			  gl_FragColor = vec4(
+	  				(dProd * .8) + ((vPosition.y + 90.0) * .005 * 0.90), // R
+	                (dProd * .3) + ((vPosition.y + 90.0) * .005 * 0.60), // G
+	                (dProd * .1) + ((vPosition.y + 90.0) * .005 * 0.50), // B
+	                1.0
+				);
+
+			}
+
+		</script>	
+
+		<script>
+		//device motion stuff
+
+		if (window.DeviceMotionEvent) {
+ 		 window.addEventListener('devicemotion', deviceMotionHandler, false);
+		}
+
+		var motion_obj = [0,0,0,0,0];
+
+		function deviceMotionHandler(e) {
+			motion_obj.shift();
+			motion_obj.push(e.acceleration.y);
+			var v = motion_obj[0] * .1 + motion_obj[1] * .2 + motion_obj[2] * .4 + motion_obj[3] * .2 + motion_obj[4] * .1;
+			targetright.innerHTML = motion_obj[0];
+			if ( v > 0.1 ) {
+				controls.moveForward = true;
+			}
+			else {
+				controls.moveForward = false;
+			}
+		}
+
+		var targetright = document.querySelector('#targetright');
+		var targetleft = document.querySelector('#targetleft');
+
+		var onProgress = function ( xhr ) {
+			if ( xhr.lengthComputable ) {
+				var percentComplete = xhr.loaded / xhr.total * 100;
+				console.log( Math.round(percentComplete, 2) + '% downloaded' );
+			}
+		};
+
+		var onError = function ( xhr ) {
+			console.log(xhr);
+		};
+
+		var isMobile = { 
+			Android: function() { return navigator.userAgent.match(/Android/i); }, 
+			BlackBerry: function() { return navigator.userAgent.match(/BlackBerry/i); }, 
+			iOS: function() { return navigator.userAgent.match(/iPhone|iPad|iPod/i); }, 
+			Opera: function() { return navigator.userAgent.match(/Opera Mini/i); }, 
+			Windows: function() { return navigator.userAgent.match(/IEMobile/i); }, 
+			any: function() { return (isMobile.Android() || isMobile.BlackBerry() || isMobile.iOS() || isMobile.Opera() || isMobile.Windows()); } 
+		};
+		
+		var cog_params = {
+			AccountId: "795449910740",
+			RoleArn: "arn:aws:iam::795449910740:role/Cognito_mars_poolUnauth_DefaultRole",
+			IdentityPoolId: "us-east-1:0b580464-322a-4807-9a11-d5c86cd9ad3f"
+		};
+		// set the Amazon Cognito region
+		AWS.config.region = 'us-east-1';
+		// initialize the Credentials object with our parameters
+		AWS.config.credentials = new AWS.CognitoIdentityCredentials(cog_params);		
+		// We can set the get method of the Credentials object to retrieve
+		// the unique identifier for the end user (identityId) once the provider
+		// has refreshed itself
+		AWS.config.credentials.get(function(err) {
+		    if (!err) {
+		        console.log("Cognito Identity Id: " + AWS.config.credentials.identityId);
+		        // Other service clients will automatically use the Cognito Credentials provider
+				// configured in the JavaScript SDK.
+				var cognitoSyncClient = new AWS.CognitoSync();
+
+				cognitoSyncClient.listDatasets(
+					{
+					    IdentityId: AWS.config.credentials.identityId,
+					    IdentityPoolId: "us-east-1:0b580464-322a-4807-9a11-d5c86cd9ad3f"
+					}, 
+					function(err, data) {
+					    if ( !err ) {
+					        console.log(JSON.stringify(data));
+					    }
+					    else {
+					    	console.log(err);
+					    }
+				    }
+				);
+		    } 
+		    else {
+		    	console.log(err);
+		    }
+		});
+
+		var dynamodb = new AWS.DynamoDB({region: 'us-west-2', TableName: 'mars_test'});
+
+		if ( ! Detector.webgl ) {
+			Detector.addGetWebGLMessage();
+			document.getElementById( 'container' ).innerHTML = "";
+		}
+
+		var container, stats;
+		var camera, controls, scene, renderer;
+		var effect;
+		var dev_orient;
+		var mesh, texture;
+		var worldWidth = 99;//360;
+		var worldDepth = 88;//352;
+		var mesh_width = 99;//360;
+		var mesh_height = 88;//352;
+		var worldHalfWidth = worldWidth / 2;
+		var worldHalfDepth = worldDepth / 2;
+
+		var clock = new THREE.Clock();
+		var mesh_geom = {};
+		var target_sight;
+		var pw = 90;
+		var ph = 88;
+		var start_row = 9;
+		var start_col = 9;
+		var tiles = 2;
+
+		var sky, sunSphere;
+		var distance = 400000;
+
+		var attributes = {
+			displacement: {
+				type: 'f', // a float
+				value: [] // an empty array
+			}
+		};
+		var uniforms = {
+			amplitude: {
+				type: 'f', // a float
+				value: 0
+			}
+		};
+		
+		init();
+		animate();
+
+		var new_geo;
+		var new_mat;
+		var waterNormalz;
+		
+		function reverse(event) {
+			event.preventDefault();
+		}
+
+		function stop(event) {
+			event.preventDefault();
+		}
+
+		function init() {
+
+			var parameters = {
+				width: 2000,
+				height: 2000,
+				widthSegments: 250,
+				heightSegments: 250,
+				depth: 1500,
+				param: 4,
+				filterparam: 1
+			};
+
+			container = document.getElementById( 'container' );
+			target_sight = document.getElementById( 'targetsight' );
+			camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 1000000 );
+			scene = new THREE.Scene();
+			//scene.fog = new THREE.FogExp2( 0xefd1b5, 64.50 );
+
+
+			renderer = new THREE.WebGLRenderer();
+			renderer.setClearColor( 0xbfd1e5 );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+
+			effect = new THREE.StereoEffect(renderer);
+
+			sky = new THREE.Sky();
+			scene.add( sky.mesh );
+
+			sunSphere = new THREE.Mesh( new THREE.SphereGeometry( 200000, 30, 30 ),
+				new THREE.MeshBasicMaterial({color: 0xffffff, wireframe: false }));
+			sunSphere.position.y = -700000;
+			sunSphere.visible = true;
+			scene.add( sunSphere );
+
+			updateSky();
+
+
+			var light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
+			light.position.set( - 1, 1, - 1 );
+			scene.add( light );
+
+			waterNormalz = new THREE.ImageUtils.loadTexture( 'textures/dunes.jpg' );
+			waterNormalz.wrapS = waterNormalz.wrapT = THREE.RepeatWrapping; 
+
+			water = new THREE.Water( renderer, camera, scene, {
+				textureWidth: 512, 
+				textureHeight: 512,
+				waterNormals: waterNormalz,
+				alpha: 	0.1,
+				sunDirection: light.position.clone().normalize(),
+				sunColor: 0xffa030,
+				waterColor: 0xf0af90,
+				distortionScale: 20.0,
+			} );
+
+			mirrorMesh = new THREE.Mesh(
+				new THREE.PlaneBufferGeometry( parameters.width * 500, parameters.height * 500 ),
+				water.material
+			);
+
+			mirrorMesh.add( water );
+			mirrorMesh.rotation.x = - Math.PI * 0.5;
+			mirrorMesh.translateZ(-150);
+			scene.add( mirrorMesh );
+
+
+			controls = new THREE.FirstPersonControls( camera );
+			controls.movementSpeed = 80;
+			controls.lookSpeed = 0.050;
+
+			dev_orient = new THREE.DeviceOrientationControls(camera);
+			
+			var h_scale = 2.0;
+
+
+			camera.position.x = tiles/2 * pw + start_row * pw;
+			camera.position.z = tiles/2 * ph + start_col * ph;
+			camera.position.y = 20.0;
+
+			for (var r = start_row; r < tiles + start_row; r++) {
+				for (var c = start_col; c < tiles + start_col; c++) {
+					var key = pad(r,4) + '.' + pad(c, 4);
+				
+			
+					dynamodb.getItem({'TableName': 'mars_test', Key: {'grid': {S: key}}}, function(err, data) {
+						targetright.innerHTML = "Loading" + key;
+						var coord = data.Item.grid.S.split('.');
+
+						if ( err ) {
+							console.log(err);
+						}
+						var geom = new THREE.PlaneBufferGeometry( pw, ph, pw - 1, ph - 1 );
+						mesh_geom[data.Item.grid.S] = data.Item.depth.L;
+						//geom.log('mesh_geom added ' + data.Item.grid.S);
+						geom.applyMatrix( new THREE.Matrix4().makeRotationX( - Math.PI / 2 ) );
+						var vtz = geom.attributes.position.array;
+
+						for ( var i = 0, j = 0, l = data.Item.depth.L.length; i < l; i ++, j += 3 ) {
+							if (data.Item.depth.L[ i ]) {
+								vtz[  j + 1 ] = parseFloat(data.Item.depth.L[ i ].N) * .033;// * h_scale;
+							}
+						}
+				
+						geom.applyMatrix(new THREE.Matrix4().makeTranslation( (pw-1.0) * parseFloat(coord[0])  , -90.0, (ph-1.0) * parseFloat(coord[1]))  );
+
+						//console.log(document.getElementById('scarybumpy').innerHTML);
+						geom.computeFaceNormals()
+						geom.computeVertexNormals()
+
+
+						//var txt = new THREE.Texture( generateTexture( data.Item.depth.L, pw, ph ), THREE.UVMapping, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping );
+						//txt.needsUpdate = true;
+						var shaderMaterial = new THREE.ShaderMaterial({
+							uniforms:     	uniforms,
+							attributes:     attributes,
+							vertexShader:   document.getElementById('scarybumpy').innerHTML,
+							fragmentShader: document.getElementById('scaryfragment').innerHTML
+						});						
+						var msh = new THREE.Mesh( geom, shaderMaterial );
+						// var msh = new THREE.Mesh( geom, new THREE.MeshBasicMaterial(  
+						// 	{ 
+						// 		map: txt,
+						// 		uniforms: uniforms,
+						// 		attributes: attributes,
+						// 		vertexShader: document.getElementById('scarybumpy').innerHTML
+						// 	}
+						// 	) 
+						// );
+						
+						scene.add( msh );
+
+						geom.attributes.position.needsUpdate = true;
+						msh.geometry.attributes.position.needsUpdate = true;
+				
+					});
+				}	
+
+			}
+
+
+			//scene.add(new_mesh);
+
+
+			container.innerHTML = "";
+
+			container.appendChild( renderer.domElement );
+
+			//stats = new Stats();
+			//stats.domElement.style.position = 'absolute';
+			//stats.domElement.style.margin = '0';
+			//targetleft.appendChild(stats.domElement);
+
+			// stats.domElement.style.border = "solid 2px rgba(250,250,250,.5)";
+			// stats.domElement.style.borderRadius = "80px 508px 70px 500px";
+			// stats.domElement.style.padding = "8px";
+
+			//container.appendChild( stats.domElement );
+
+			window.addEventListener( 'resize', onWindowResize, false );
+
+		}
+
+		function updateSky() {
+			// http://stackoverflow.com/questions/27348125/colors-output-from-webgl-fragment-shader-differ-significantly-across-platforms
+			var uniforms = sky.uniforms;
+			uniforms.turbidity.value = 2.0;
+			uniforms.reileigh.value = 4;
+			uniforms.luminance.value = 1;
+			uniforms.mieCoefficient.value = .0043;
+			uniforms.mieDirectionalG.value = .92;
+
+			var inclination = .49;
+			var azimuth = .40;
+			var theta = Math.PI * (inclination - 0.5);
+			var phi = 2 * Math.PI * (azimuth - 0.5);
+
+			sunSphere.position.x = distance * Math.cos(phi);
+			sunSphere.position.y = distance * Math.sin(phi) * Math.sin(theta); 
+			sunSphere.position.z = distance * Math.sin(phi) * Math.cos(theta); 
+
+			sunSphere.visible = false;
+
+			sky.uniforms.sunPosition.value.copy(sunSphere.position);
+		}
+
+		// function updateGroundMesh() {
+		// 	var vtz = new_geo.attributes.position.array;
+		// 	for (var r = start_row; r < tiles + start_row; r++) {
+		// 		for (var c = start_col; c < tiles + start_col; c++) {
+		// 			var key = pad(r,4) + '.' + pad(c, 4);
+		// 			var data = mesh_geom[key];
+		// 			//console.log(mesh_geom);
+		// 			for ( var i = 0, j = 0, l = data.length; i < l; i ++, j += 3 ) {
+		// 				if (data[ i ]) {
+		// 					vtz[  j + 1 ] = parseFloat(data[ i ].N) * .015;// * h_scale;
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// 	new_geo.attributes.position.needsUpdate = true;
+		// }
+
+		function stitch() {
+			console.log('stitching');
+			for (var r = start_row; r < 8 + start_row; r++) {
+				for (var c = start_col; c < 8 + start_col; c++) {	
+					var key = pad(r,4) + '.' + pad(c, 4);
+					var key_above = pad(r-1,4) + '.' + pad(c, 4);
+
+					//var key_right = 
+					if ( mesh_geom[key] && mesh_geom[key_above]) {
+						//console.log(key + ' ' + key_above);
+						var gt = mesh_geom[key];
+						var gb = mesh_geom[key_above];
+						var vt = gt.attributes.position.array;
+						var vb = gb.attributes.position.array;
+						for ( var i = 0; i < pw*3; i+=3 ) {
+							var avg = (vt[i+1] + vb[(ph-1)*pw + i+1]) / 2.0;
+							vt[i+1] = avg;
+							vb[(ph-1)*pw + i+1] = avg;
+						}
+						gt.attributes.position.needsUpdate = true;
+						gb.attributes.position.needsUpdate = true;
+					}
+
+					// var key_left = pad(r,4) + '.' + pad(c-1, 4);
+					// if ( mesh_geom[key] && mesh_geom[key_left]) {
+					// 	var gt = mesh_geom[key];
+					// 	var gl = mesh_geom[key_left];
+					// 	var vt = gt.attributes.position.array;
+					// 	var vl = gl.attributes.position.array;
+					// 	for (y = 0; y < ph; y++ ) {	
+							
+					// 			var avg = (vt[y*pw*3 + (pw*3) - 1 + 1] + vl[y*pw*3+1]) / 2.0;
+					// 			vt[y*pw*3 + (pw*3) - 1 + 1] = avg;
+					// 			vl[y*pw*3+1] = avg;
+						
+					// 	}
+					// 	gt.attributes.position.needsUpdate = true;
+					// 	gl.attributes.position.needsUpdate = true;						
+					// }
+				}
+			}
+
+			console.log('stitching done.');		
+		}
+
+		function pad(n, width, z) {
+		  z = z || '0';
+		  n = n + '';
+		  return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+		}
+
+		function onWindowResize() {
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			effect.setSize( window.innerWidth, window.innerHeight );
+			
+			controls.handleResize();
+		}
+
+
+		function animate() {
+			requestAnimationFrame( animate );
+			render();
+		}
+
+		var frame = 0.0;
+		function render() {
+
+			controls.update( clock.getDelta() );
+			if (camera.position.y < -100.0) {
+				camera.position.y = -100.0;
+			}
+			
+			if ( isMobile.any() ) {
+				dev_orient.update();
+			}
+			
+			water.material.uniforms.time.value += .0022251;
+			water.render();
+
+			uniforms.amplitude.value = Math.sin(frame) * 1.2;
+			frame += 0.01;
+
+			//renderer.render( scene, camera );
+			effect.render( scene, camera );
+
+			//targetright.innerHTML = parseInt(camera.position.y);
+
+		}
+
+		</script>
+
+	</body>
+
+</html>

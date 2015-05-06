@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Mars</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				color: #61443e;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+
+				background-color: #bfd1e5;
+				margin: 0px;
+				overflow: hidden;
+			}
+
+			#info {
+				position: absolute;
+				top: 0px; width: 100%;
+				padding: 5px;
+			}
+
+			a {
+
+				color: #a06851;
+			}
+			#targetsight {
+				background-color: rgb(100,200,100);
+				border: solid 2px black;
+				width: 400px;
+				height: 150px;
+				opacity: .1;
+				position: absolute;
+				top: 45%;
+				left: 40%;
+				border-radius: 8px;
+				visibility: hidden;
+			}
+
+		</style>
+	</head>
+	<body>
+		<!--div id="targetsight" class="targetsight"></div-->
+		<div id="container"><br /><br /><br /><br /><br />Generating world...</div>
+		<div id="info"><a href="http://threejs.org" target="_blank">three.js</a> - webgl terrain demo<br />(left click: forward, right click: backward)</div>
+		<script src="https://sdk.amazonaws.com/js/aws-sdk-2.1.10.min.js"></script>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r70/three.min.js"></script>
+
+		<script src="js/controls/FirstPersonControls.js"></script>
+		<script src="js/controls/DeviceOrientationControls.js"></script>
+
+		<script src="js/ImprovedNoise.js"></script>
+		<script src="js/Detector.js"></script>
+		<script src="js/libs/stats.min.js"></script>
+		<script type="text/javascript" src="mo-100.js"></script>
+		<script type="text/javascript" src="mo-008.008.js"></script>
+		<script type="text/javascript" src="mo-008.009.js"></script>
+		<script type="text/javascript" src="mo-008.007.js"></script>
+		<script>
+
+		AWS.config.credentials = new AWS.CognitoIdentityCredentials();
+
+		AWS.config.update({accessKeyId: 'AKIAIQR3QLZP3KEMQA4Q', secretAccessKey: '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'});
+		AWS.config.region = 'us-west-2';
+		var dynamodb = new AWS.DynamoDB({region: 'us-west-2', TableName: 'mars_data_test'});
+		
+		var key = '0000.0057';
+
+		var itemParams = {Item: {id: {S: key} } };
+		  // Read the item from the table
+		table.getItem({Key: {id: {S: key}}}, function(err, data) {
+			console.log(data.Item); // print the item data
+		});
+
+			if ( ! Detector.webgl ) {
+
+				Detector.addGetWebGLMessage();
+				document.getElementById( 'container' ).innerHTML = "";
+
+			}
+
+			var container, stats;
+
+			var camera, controls, scene, renderer;
+			var dev_orient;
+
+			var mesh, texture;
+
+			var worldWidth = 360;
+			var worldDepth = 352;
+			var mesh_width = 360;
+			var mesh_height = 352;
+			var worldHalfWidth = worldWidth / 2;
+			var worldHalfDepth = worldDepth / 2;
+
+			var clock = new THREE.Clock();
+
+			init();
+			animate();
+
+			var meshGrid = [];
+			var target_sight;
+
+			function init() {
+
+				container = document.getElementById( 'container' );
+				target_sight = document.getElementById( 'targetsight' );
+
+				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 20000 );
+
+				scene = new THREE.Scene();
+				scene.fog = new THREE.FogExp2( 0xefd1b5, 0.0025 );
+
+				controls = new THREE.FirstPersonControls( camera );
+				controls.movementSpeed = 80;
+				controls.lookSpeed = 0.050;
+
+				dev_orient = new THREE.DeviceOrientationControls(camera);
+
+
+				//data = generateHeight( worldWidth, worldDepth );
+
+				camera.position.y = 100.0; //mo100[ worldHalfWidth + worldHalfDepth * worldWidth ] * 10 + 500;
+
+				// var geometry = new THREE.PlaneBufferGeometry( 1152, 1152, worldWidth - 1, worldDepth - 1 );
+				// geometry.applyMatrix( new THREE.Matrix4().makeRotationX( - Math.PI / 2 ) );
+				// var vertices = geometry.attributes.position.array;
+				// for ( var i = 0, j = 0, l = vertices.length; i < l; i ++, j += 3 ) {0
+				// 	vertices[ j + 1 ] = mo100[ i ] * .225; // i fucked up the data
+				// }
+
+				//console.log(mo008008.length);
+
+				//g2.applyMatrix(new THREE.Matrix4().makeTranslation( 1152, 1152 ));
+
+				//texture = new THREE.Texture( generateTexture( mo100, worldWidth, worldDepth ), new THREE.UVMapping(), THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping );
+				// texture = new THREE.Texture( generateTexture( mo100, worldWidth, worldDepth ), THREE.UVMapping, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping );
+				// texture.needsUpdate = true;
+
+				// mesh = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { map: texture } ) );
+				//scene.add( mesh );
+				var h_scale = 2.0;
+				var g2 = new THREE.PlaneBufferGeometry( mesh_width, mesh_height, worldWidth - 1, worldDepth - 1 );
+				g2.applyMatrix( new THREE.Matrix4().makeRotationX( - Math.PI / 2 ) );
+				var v2 = g2.attributes.position.array;
+				for ( var i = 0, j = 0, l = v2.length; i < l; i ++, j += 3 ) {0
+					v2[ j + 1 ] = mo008008[ i ] * h_scale;
+				}
+
+
+				var g3 = new THREE.PlaneBufferGeometry( mesh_width, mesh_height, worldWidth - 1, worldDepth - 1 );
+				g3.applyMatrix( new THREE.Matrix4().makeRotationX( - Math.PI / 2 ) );
+				var v3 = g3.attributes.position.array;
+				for ( var i = 0, j = 0, l = v3.length; i < l; i ++, j += 3 ) {0
+					v3[ j + 1 ] = mo008009[ i ] * h_scale;
+				}
+				g3.applyMatrix(new THREE.Matrix4().makeTranslation( 0, 0, worldDepth));
+				
+				t3 = new THREE.Texture( generateTexture( mo008009, worldWidth, worldDepth ), THREE.UVMapping, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping );
+				t3.needsUpdate = true;
+				
+				var m3 = new THREE.Mesh( g3, new THREE.MeshBasicMaterial(  { map: t3}) );
+				scene.add( m3 );
+
+				var g1 = new THREE.PlaneBufferGeometry( mesh_width, mesh_height, worldWidth - 1, worldDepth - 1 );
+				g1.applyMatrix( new THREE.Matrix4().makeRotationX( - Math.PI / 2 ) );
+				var v1 = g1.attributes.position.array;
+				for ( var i = 0, j = 0, l = v1.length; i < l; i ++, j += 3 ) {0
+					v1[ j + 1 ] = mo008007[ i ] * h_scale;
+				}
+				g1.applyMatrix(new THREE.Matrix4().makeTranslation( 0, 0, -worldDepth ));
+				
+				t1 = new THREE.Texture( generateTexture( mo008007, worldWidth, worldDepth ), THREE.UVMapping, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping );
+				t1.needsUpdate = true;
+				var m1 = new THREE.Mesh( g1, new THREE.MeshBasicMaterial(  { map: t1}) );
+				scene.add( m1 );
+
+
+				// g2.merge(g1, m2);
+				// g2.merge(g3, m2);
+
+
+				t2 = new THREE.Texture( generateTexture( mo008008, worldWidth, worldDepth ), THREE.UVMapping, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping );
+				t2.needsUpdate = true;
+				var m2 = new THREE.Mesh( g2, new THREE.MeshBasicMaterial(  { map: t2}) );
+				scene.add( m2 );
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setClearColor( 0xbfd1e5 );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				container.innerHTML = "";
+
+				container.appendChild( renderer.domElement );
+
+				stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.top = '0px';
+				container.appendChild( stats.domElement );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+				//loadMOData();
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				controls.handleResize();
+
+			}
+
+
+			function generateTexture( data, width, height ) {
+
+				var canvas, canvasScaled, context, image, imageData,
+				level, diff, vector3, sun, shade;
+
+				vector3 = new THREE.Vector3( 0, 0, 0 );
+
+				sun = new THREE.Vector3( 1, 1, 1 );
+				sun.normalize();
+
+				canvas = document.createElement( 'canvas' );
+				canvas.width = width;
+				canvas.height = height;
+
+				context = canvas.getContext( '2d' );
+				context.fillStyle = '#000';
+				context.fillRect( 0, 0, width, height );
+
+				image = context.getImageData( 0, 0, canvas.width, canvas.height );
+				imageData = image.data;
+
+				for ( var i = 0, j = 0, l = imageData.length; i < l; i += 4, j ++ ) {
+					if ( j -2 < 0) {
+						vector3.x = data[ j ] - data[ j + 2 ];
+					} else {
+						vector3.x = data[ j - 2 ] - data[ j + 2 ];
+					}
+
+					vector3.y = 2;
+
+					if ( j - width *2 < 0) {
+						vector3.z = data[ j  ] - data[ j + width * 2 ];
+
+					} else {
+						vector3.z = data[ j - width * 2 ] - data[ j + width * 2 ];
+
+					}
+					vector3.normalize();
+
+					shade = vector3.dot( sun );
+
+					imageData[ i ] = ( 96 + shade * 128 ) * ( 0.5 + data[ j ] * 0.07 );
+					imageData[ i + 1 ] = ( 35 + shade * 96 ) * ( 0.5 + data[ j ] * 0.07 );
+					imageData[ i + 2 ] = ( 5+ shade * 96 ) * ( 0.5 + data[ j ] * 0.07 );
+				}
+
+				context.putImageData( image, 0, 0 );
+
+				// Scaled 4x
+
+				canvasScaled = document.createElement( 'canvas' );
+				canvasScaled.width = width * 4;
+				canvasScaled.height = height * 4;
+
+				context = canvasScaled.getContext( '2d' );
+				context.scale( 4, 4 );
+				context.drawImage( canvas, 0, 0 );
+
+				image = context.getImageData( 0, 0, canvasScaled.width, canvasScaled.height );
+				imageData = image.data;
+
+
+				context.putImageData( image, 0, 0 );
+
+				return canvasScaled;
+
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+				stats.update();
+
+			}
+
+			function render() {
+
+				controls.update( clock.getDelta() );
+				dev_orient.update();
+				
+				renderer.render( scene, camera );
+
+				if (camera.position.y < 40.0) {
+					camera.position.y = 40.0;
+				}
+				//console.log(controls.mouseX);
+				//target_sight.style.left = -200 + controls.mouseX + window.innerWidth/2 + 'px';
+				//target_sight.style.top = -50 + controls.mouseY + window.innerHeight/2 + 'px';
+
+
+			}
+
+		</script>
+
+	</body>
+</html>
