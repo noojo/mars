@@ -56,7 +56,7 @@
 			}
 
 			.hudgauge {
-				font-size: 4em;
+				font-size: 3.0em;
 			}
 
 			.hudlabel {
@@ -77,8 +77,17 @@
 
 			#blank {
 				background-color: rgb(200,100,50);
-				min-width: 50px;
+				min-width: 30px;
 				
 				margin: 4px;
 				background: linear-gradient(to top, rgba(20,210,220,1), rgba(20,210,220,0));
+			}
+
+			#globe {
+/*				position: absolute;
+				z-index: 3;*/
+				min-width: 70px;
+				
+				/*top: 200px;*/
+				background-color: rgba(0,150,185,.3);
 			}

@@ -1,17 +1,19 @@
-//var motion_obj = [0,0,0,0,0];
 var first_time = true;
-
-function deviceMotionHandler(e) {
-	motion_obj.shift();
-	motion_obj.push(e.acceleration.y);
-	var v = motion_obj[0] * .1 + motion_obj[1] * .1 + motion_obj[2] * .2 + motion_obj[3] * .4 + motion_obj[4] * .2;
-}
 
 var aws_dynamo = document.querySelector('#aws_dynamo');
 var aws_cognito = document.querySelector('#aws_cognito');
 var altimeter = document.querySelector('#altimeter');
 var hud_bar = document.querySelector('#barr');
 var hud_blank = document.querySelector('#blank');
+
+
+// mobile things
+//var motion_obj = [0,0,0,0,0];
+function deviceMotionHandler(e) {
+	motion_obj.shift();
+	motion_obj.push(e.acceleration.y);
+	var v = motion_obj[0] * .1 + motion_obj[1] * .1 + motion_obj[2] * .2 + motion_obj[3] * .4 + motion_obj[4] * .2;
+}
 
 var isMobile = { 
 	Android: function() { return navigator.userAgent.match(/Android/i); }, 
@@ -21,7 +23,9 @@ var isMobile = {
 	Windows: function() { return navigator.userAgent.match(/IEMobile/i); }, 
 	any: function() { return (isMobile.Android() || isMobile.BlackBerry() || isMobile.iOS() || isMobile.Opera() || isMobile.Windows()); } 
 };
+// end mobile
 
+// AWS
 var cog_params = {
 	AccountId: "795449910740",
 	RoleArn: "arn:aws:iam::795449910740:role/Cognito_mars_poolUnauth_DefaultRole",
@@ -35,10 +39,11 @@ AWS.config.credentials = new AWS.CognitoIdentityCredentials(cog_params);
 // the unique identifier for the end user (identityId) once the provider
 // has refreshed itself
 var cog_now = Date.now();
+
 AWS.config.credentials.get(function(err) {
     if (!err) {
         console.log("Cognito Identity Id: " + AWS.config.credentials.identityId);
-        addline("Cognito Identity Id: " + AWS.config.credentials.identityId + ' ' + (Date.now() - cog_now) + ' ms', aws_cognito);
+        addline("Identity Id: " + AWS.config.credentials.identityId + ' ' + (Date.now() - cog_now) + ' ms', aws_cognito);
         // Other service clients will automatically use the Cognito Credentials provider
 		// configured in the JavaScript SDK.
 		var cognitoSyncClient = new AWS.CognitoSync();
@@ -50,24 +55,27 @@ AWS.config.credentials.get(function(err) {
 			}, 
 			function(err, data) {
 			    if ( data) {
-			    	addline('Cognito data count: ' + data.Count, aws_cognito);
+			    	addline('listDatasets: ' + data.Count, aws_cognito);
 			        console.log(data);
 			       	var x = document.querySelector('#cogmeter');
 					x.classList.remove('hudoff');
 			    }
 			    if ( err ) {
 			    	console.log(err);
-			    	addline('Cognito ERROR: ' + err, aws_cognito);
+			    	addline('Sync listDatasets ERROR: ' + err, aws_cognito);
 			    }
 		    }
 		);
     } 
     else {
     	console.log(err);
+    	addline('FAIL.' + err, aws_cognito);
     }
 });
 
 var dynamodb = new AWS.DynamoDB({region: 'us-west-2', TableName: 'mars_test'});
+
+// WEBGL
 
 if ( ! Detector.webgl ) {
 	Detector.addGetWebGLMessage();
@@ -85,12 +93,14 @@ var pw = 90;
 var ph = 88;
 var start_row = 9;
 var start_col = 9;
-var tiles = 8;
+var tiles = 10;
 var tiles_dl = 0;
 
 var sky, sunSphere;
 var distance = 400000;
-var hud_sphere; 
+var hud_sphere, hud_sphere_y, hud_sphere_z; 
+
+var globe_renderer, globe_scene, globe_camera, globe_container;
 
 var attributes = {
 	displacement: {
@@ -131,16 +141,10 @@ function init() {
 	container = document.getElementById( 'container' );
 	target_sight = document.getElementById( 'targetsight' );
 	camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 1000000 );
-	ortho_camera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 1, 1000 );
 	scene = new THREE.Scene();
-	ortho_scene = new THREE.Scene();
-	
-
-	//scene.fog = new THREE.FogExp2( 0xefd1b5, 64.50 );
-
 
 	renderer = new THREE.WebGLRenderer();
-	renderer.setClearColor( 0xbfd1e5 );
+	renderer.setClearColor( 0x000000 );
 	renderer.setSize( window.innerWidth, window.innerHeight );
 
 	sky = new THREE.Sky();
@@ -182,7 +186,6 @@ function init() {
 	mirrorMesh.translateZ(-150);
 	scene.add( mirrorMesh );
 
-
 	controls = new THREE.FirstPersonControls( camera );
 	controls.movementSpeed = 80;
 	controls.lookSpeed = 0.050;
@@ -195,7 +198,7 @@ function init() {
 	camera.rotation.x = -1.0;
 
 	var now = Date.now();
-		var ddb_now = {};
+	var ddb_now = {};
 	
 	for (var r = start_row; r < tiles + start_row; r++) {
 		for (var c = start_col; c < tiles + start_col; c++) {
@@ -204,11 +207,11 @@ function init() {
 			ddb_now[key] = Date.now();
 
 			dynamodb.getItem({'TableName': 'mars_test', Key: {'grid': {S: key}}}, function(err, data) {
-				addline('DynamoDB loading: ' + data.Item.grid.S  + ' ' + 
+				addline('getItem: ' + data.Item.grid.S  + ' ' + 
 						(Date.now() - ddb_now[data.Item.grid.S]) + 'ms', aws_dynamo);
 				
 				if ( err ) {
-					addline('DynamoDB ERROR: ' + err, aws_dynamo);
+					addline('ERROR: ' + err, aws_dynamo);
 					console.log(err);
 				}
 
@@ -251,18 +254,48 @@ function init() {
 
 	}
 
-	var hud_material = new THREE.MeshBasicMaterial({ blending: THREE.AdditiveBlending, color: 0x00dbff, wireframe: true, transparent: true, opacity: .2, wireframeLineWidth: 4.0 });
-	hud_sphere = new THREE.Mesh( new THREE.SphereGeometry(15, 10, 10 ), hud_material );
-	//hud_sphere.position = camera.position;
-	ortho_scene.add( hud_sphere );
 
 	container.innerHTML = "";
 	container.appendChild( renderer.domElement );
 
 	window.addEventListener( 'resize', onWindowResize, false );
 
+	// ok i need a dom elem, a renderer 
+
+	var hud_material = new THREE.MeshBasicMaterial({ blending: THREE.AdditiveBlending, color: 0x40ebff, 
+							wireframe: true, transparent: true, opacity: .1, wireframeLinewidth: 1.0 });
+	var hud_material_y = new THREE.MeshBasicMaterial({ blending: THREE.AdditiveBlending, color: 0xffeb40, 
+							wireframe: true, transparent: true, opacity: .1, wireframeLinewidth: 1.2 });
+	
+	var hud_material_z = new THREE.MeshBasicMaterial({ blending: THREE.AdditiveBlending, color: 0xff6000, 
+							wireframe: true, transparent: true, opacity: .2, wireframeLinewidth: 1.4 });
+	
+	hud_sphere = new THREE.Mesh( new THREE.SphereGeometry(12, 12, 12 ), hud_material );
+	hud_sphere_y = new THREE.Mesh( new THREE.SphereGeometry(10, 10, 10 ), hud_material_y );
+	hud_sphere_z = new THREE.Mesh( new THREE.SphereGeometry(8, 8, 8 ), hud_material_z );
+
+
+	//hud_sphere.position = camera.position;
+
+	globe_container = document.getElementById( 'globe' );
+	globe_camera = new THREE.PerspectiveCamera( 60, 1, 1, 10000 );
+	globe_scene = new THREE.Scene();
+
+	globe_renderer = new THREE.WebGLRenderer({alpha: true});
+	globe_renderer.setClearColor( 0x000000, .2 );
+	globe_renderer.setSize( 80,80 );
+
+	globe_scene.add( hud_sphere );
+	globe_scene.add( hud_sphere_y );
+	globe_scene.add( hud_sphere_z );
+	
+	globe_container.appendChild(globe_renderer.domElement);
+
 	setTimeout(watchTiles, 2000);
+
 }
+
+
 
 function watchTiles(e) {
 	var d = document.querySelector('#hudmsg');
@@ -353,7 +386,17 @@ function render() {
 	}
 	else {
 		controls.update( clock.getDelta() );
-		hud_sphere.position.copy(controls.target);
+		 //hud_sphere.position.copy(controls.target);
+		 hud_sphere.rotation.x = camera.rotation.x;
+		 //hud_sphere.rotation.y = camera.rotation.y;
+		 hud_sphere_y.rotation.y = camera.rotation.y;
+		 hud_sphere_z.rotation.z = camera.rotation.z;
+		 //hud_sphere.position.x = controls.target.mxoff;
+		 //hud_sphere.position.z = controls.target.mzoff;
+		 //hud_sphere.position.y = controls.target.myoff;
+		 globe_camera.position = camera.position;
+		 globe_camera.position.z = 24.0;
+		//hud_sphere.position.z = 0.0;
 	}
 
 	if ( camera.position.y < 21.0) {
@@ -377,6 +420,7 @@ function render() {
 	frame += 0.01;
 
 	renderer.render( scene, camera );
+	globe_renderer.render(globe_scene, globe_camera);
 	//renderer.render( ortho_scene, ortho_camera );
 
 	altimeter.innerHTML = parseInt(camera.position.y);

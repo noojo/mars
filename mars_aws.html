@@ -8,7 +8,7 @@
 		<link href="mars_aws.css" rel="stylesheet" type="text/css">
 	</head>
 	<body>
-		<!--div id="targetleft" ></div-->
+		
 		<div id="targetright" class="hud">
 			<span class="hudlet"><div id="cogmeter" class="hudgauge hudoff">COG</div><div class="hudlabel"></div></span>
 			<span id="aws_cognito" class="hudlet"></span>
@@ -16,6 +16,7 @@
 			<span id="aws_dynamo" class="hudlet"></span>
 			<span class="hudlet"><div id="opsmeter" class="hudgauge hudoff">OPS</div><div class="hudlabel"></div></span>
 			<span class="hudlet" id="hudmsg"><li>Initializing systems...</li></span>
+		<div id="globe" class="hudlet"></div>
 			<span class="hudlet"><div id="blank" class="hudgauge"></div></span>
 			<span class="hudlet"><div id="altimeter" class="hudgauge">123</div><div class="hudlabel">ALT</div></span>
 			<span class="hudlet"><div id="barr" class="hudgauge"></div><div class="hudlabel">WORMSIGN</div></span>
@@ -27,9 +28,11 @@
 			</span>
 
 		</div>
-		<div id="container"><br /><br /><br /><br /><br />Generating world...</div>
-		<script src="https://sdk.amazonaws.com/js/aws-sdk-2.1.14.min.js"></script>
 
+		<div id="container"><br /><br /><br /><br /><br />Generating world...</div>
+
+		
+		<script src="https://sdk.amazonaws.com/js/aws-sdk-2.1.14.min.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r70/three.min.js"></script>
 
 		<script src="js/controls/FirstPersonControls.js"></script>
@@ -38,7 +41,6 @@
 		<script src="js/Detector.js"></script>
 		<script src="js/MarsSkyShader.js"></script>
 		<script src="js/Mirror.js"></script>
-		
 		<script src="js/DuneShader.js"></script>
 
 
