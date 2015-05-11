@@ -260,22 +260,19 @@ function init() {
 
 	window.addEventListener( 'resize', onWindowResize, false );
 
-	// ok i need a dom elem, a renderer 
 
-	var hud_material = new THREE.MeshBasicMaterial({ blending: THREE.AdditiveBlending, color: 0x40ebff, 
-							wireframe: true, transparent: true, opacity: .1, wireframeLinewidth: 1.0 });
-	var hud_material_y = new THREE.MeshBasicMaterial({ blending: THREE.AdditiveBlending, color: 0xffeb40, 
-							wireframe: true, transparent: true, opacity: .1, wireframeLinewidth: 1.2 });
+	// gl hud element
+	var hud_material = new THREE.MeshBasicMaterial({ blending: THREE.AdditiveBlending, color: 0x8888ff, 
+							wireframe: true, transparent: true, opacity: .1, wireframeLinewidth: 2.0 });
+	var hud_material_y = new THREE.MeshBasicMaterial({ blending: THREE.AdditiveBlending, color: 0x88ff88, 
+							wireframe: true, transparent: true, opacity: .1, wireframeLinewidth: 2.0 });
 	
-	var hud_material_z = new THREE.MeshBasicMaterial({ blending: THREE.AdditiveBlending, color: 0xff6000, 
-							wireframe: true, transparent: true, opacity: .2, wireframeLinewidth: 1.4 });
+	var hud_material_z = new THREE.MeshBasicMaterial({ blending: THREE.AdditiveBlending, color: 0xff8888, 
+							wireframe: true, transparent: true, opacity: .1, wireframeLinewidth: 2.0 });
 	
-	hud_sphere = new THREE.Mesh( new THREE.SphereGeometry(12, 12, 12 ), hud_material );
-	hud_sphere_y = new THREE.Mesh( new THREE.SphereGeometry(10, 10, 10 ), hud_material_y );
-	hud_sphere_z = new THREE.Mesh( new THREE.SphereGeometry(8, 8, 8 ), hud_material_z );
-
-
-	//hud_sphere.position = camera.position;
+	hud_sphere = new THREE.Mesh( new THREE.SphereGeometry(14, 10, 10 ), hud_material );
+	hud_sphere_y = new THREE.Mesh( new THREE.SphereGeometry(10, 6, 6 ), hud_material_y );
+	hud_sphere_z = new THREE.Mesh( new THREE.SphereGeometry(6, 6, 6 ), hud_material_z );
 
 	globe_container = document.getElementById( 'globe' );
 	globe_camera = new THREE.PerspectiveCamera( 60, 1, 1, 10000 );
@@ -381,22 +378,17 @@ var frame = 0.0;
 
 function render() {
 	
-	if ( first_time ) {
+	if ( first_time ) { //decent
 		camera.position.y -= 1.0;
+		globe_camera.position.z += 0.0625;
 	}
 	else {
 		controls.update( clock.getDelta() );
-		 //hud_sphere.position.copy(controls.target);
 		 hud_sphere.rotation.x = camera.rotation.x;
-		 //hud_sphere.rotation.y = camera.rotation.y;
 		 hud_sphere_y.rotation.y = camera.rotation.y;
 		 hud_sphere_z.rotation.z = camera.rotation.z;
-		 //hud_sphere.position.x = controls.target.mxoff;
-		 //hud_sphere.position.z = controls.target.mzoff;
-		 //hud_sphere.position.y = controls.target.myoff;
 		 globe_camera.position = camera.position;
 		 globe_camera.position.z = 24.0;
-		//hud_sphere.position.z = 0.0;
 	}
 
 	if ( camera.position.y < 21.0) {
@@ -421,7 +413,6 @@ function render() {
 
 	renderer.render( scene, camera );
 	globe_renderer.render(globe_scene, globe_camera);
-	//renderer.render( ortho_scene, ortho_camera );
 
 	altimeter.innerHTML = parseInt(camera.position.y);
 
