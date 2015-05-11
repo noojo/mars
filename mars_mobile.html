@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Mars</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link href='http://fonts.googleapis.com/css?family=Roboto:400,900' rel='stylesheet' type='text/css'>
+		<link href="mars_aws.css" rel="stylesheet" type="text/css">
+	</head>
+	<body>
+		
+		<div id="targetright" class="hud">
+			<span class="hudlet" id="hudmsg"><li>Initializing systems...</li></span>
+			<div id="globe" class="hudlet"></div>
+			<span class="hudlet"><div id="blank" class="hudgauge"></div></span>
+			<span class="hudlet"><div id="altimeter" class="hudgauge">123</div><div class="hudlabel">ALT</div></span>
+			<br>
+			<span class="hudlet"><div id="barr" class="hudgauge"></div><div class="hudlabel">WORMSIGN</div></span>
+			<span class="hudlet">
+				<li>This is data from the MOMA Orbital Spacecraft</li>
+				<li>laser imaged at an orbit of something</li>
+				<li>The usual FPS controls should work</li>
+				<li>left click - forward, center click back</li>
+			</span>
+			<span class="hudlet"><div id="opsmeter" class="hudgauge hudoff">OPS</div><div class="hudlabel"></div></span>
+			<span class="hudlet"><div id="cogmeter" class="hudgauge hudoff">COG</div><div class="hudlabel"></div></span>
+			<span id="aws_cognito" class="hudlet"></span>
+			<span class="hudlet"><div id="ddbmeter" class="hudgauge hudoff">DDB</div><div class="hudlabel"></div></span>
+			<span id="aws_dynamo" class="hudlet"></span>
+
+		</div>
+
+		<div id="container"><br /><br /><br /><br /><br />Generating world...</div>
+
+		
+		<script src="https://sdk.amazonaws.com/js/aws-sdk-2.1.14.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r70/three.min.js"></script>
+
+		<script src="js/controls/FirstPersonControls.js"></script>
+		<script src="js/controls/DeviceOrientationControls.js"></script>
+		<script src="js/ImprovedNoise.js"></script>
+		<script src="js/Detector.js"></script>
+		<script src="js/MarsSkyShader.js"></script>
+		<script src="js/Mirror.js"></script>
+		<script src="js/DuneShader.js"></script>
+
+
+		<script type="x-shader/x-vertex" id="scarybumpy">		
+				// switch on high precision floats
+			#ifdef GL_ES
+			precision highp float;
+			#endif
+			
+			uniform float amplitude;
+			attribute float displacement;
+			varying vec3 vNormal;
+			varying vec3 vPosition;
+
+			void main() {
+
+				vNormal = normal;
+				
+				vPosition = position + normal;
+				// if ( vPosition.y < -90.0) {
+				// 	vPosition.y += log(amplitude * 4.0, 10.0);
+				// }
+
+				
+				gl_Position = projectionMatrix *
+							  modelViewMatrix *
+							  vec4(vPosition,1.0);
+			}
+		</script>
+
+		<script type="x-shader/x-fragment" id="scaryfragment">
+	
+			#ifdef GL_ES
+			precision highp float;
+			#endif
+			
+			// same name and type as VS
+			varying vec3 vNormal;
+			varying vec3 vPosition;
+
+			float rand(vec2 co)
+			{
+			   return fract(sin(dot(co.xy,vec2(12.9898,78.233))) * 43758.5453);
+			}
+			void main() {
+			  // 0 -> 1 rather than -1 -> 1
+			  vec3 light = vec3(0.5, 0.2, -1.0);
+			  // ensure it's normalized
+			  light = normalize(light);
+			  // calculate the dot product of
+			  // the light to the vertex normal
+			  float dProd = max(0.0, dot(vNormal, light));
+		  
+			  gl_FragColor = vec4(
+	  				(dProd * .8) + ((vPosition.y + 90.0) * .005 * 0.90), // R
+	                (dProd * .3) + ((vPosition.y + 90.0) * .005 * 0.60), // G
+	                (dProd * .1) + ((vPosition.y + 90.0) * .005 * 0.50), // B
+	                1.0
+				);
+
+			}
+
+		</script>	
+<script type="text/javascript" src="mars.js"></script>
+		<script>
+		//device motion stuff
+
+		// if (window.DeviceMotionEvent) {
+ 	// 	 window.addEventListener('devicemotion', deviceMotionHandler, false);
+		// }
+
+
+
+		</script>
+
+	</body>
+
+</html>

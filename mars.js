@@ -262,24 +262,25 @@ function init() {
 
 
 	// gl hud element
-	var hud_material = new THREE.MeshBasicMaterial({ blending: THREE.AdditiveBlending, color: 0x8888ff, 
-							wireframe: true, transparent: true, opacity: .1, wireframeLinewidth: 2.0 });
+	var hud_material = new THREE.MeshBasicMaterial({ blending: THREE.AdditiveBlending, color: 0xa0b0ff, 
+							wireframe: true, transparent: true, opacity: .3, wireframeLinewidth: 1.0 });
+
 	var hud_material_y = new THREE.MeshBasicMaterial({ blending: THREE.AdditiveBlending, color: 0x88ff88, 
-							wireframe: true, transparent: true, opacity: .1, wireframeLinewidth: 2.0 });
+							wireframe: true, transparent: true, opacity: .4, wireframeLinewidth: 1.0 });
 	
-	var hud_material_z = new THREE.MeshBasicMaterial({ blending: THREE.AdditiveBlending, color: 0xff8888, 
-							wireframe: true, transparent: true, opacity: .1, wireframeLinewidth: 2.0 });
+	var hud_material_z = new THREE.MeshBasicMaterial({ blending: THREE.AdditiveBlending, color: 0xffd818, 
+							wireframe: true, transparent: true, opacity: .2, wireframeLinewidth: 1.0 });
 	
-	hud_sphere = new THREE.Mesh( new THREE.SphereGeometry(14, 10, 10 ), hud_material );
-	hud_sphere_y = new THREE.Mesh( new THREE.SphereGeometry(10, 6, 6 ), hud_material_y );
-	hud_sphere_z = new THREE.Mesh( new THREE.SphereGeometry(6, 6, 6 ), hud_material_z );
+	hud_sphere = new THREE.Mesh( new THREE.SphereGeometry(28, 10, 10 ), hud_material );
+	hud_sphere_y = new THREE.Mesh( new THREE.SphereGeometry(20, 6, 6 ), hud_material_y );
+	hud_sphere_z = new THREE.Mesh( new THREE.SphereGeometry(12, 6, 6 ), hud_material_z );
 
 	globe_container = document.getElementById( 'globe' );
 	globe_camera = new THREE.PerspectiveCamera( 60, 1, 1, 10000 );
 	globe_scene = new THREE.Scene();
 
 	globe_renderer = new THREE.WebGLRenderer({alpha: true});
-	globe_renderer.setClearColor( 0x000000, .2 );
+	globe_renderer.setClearColor( 0x000000, .1 );
 	globe_renderer.setSize( 80,80 );
 
 	globe_scene.add( hud_sphere );
@@ -380,15 +381,18 @@ function render() {
 	
 	if ( first_time ) { //decent
 		camera.position.y -= 1.0;
-		globe_camera.position.z += 0.0625;
+		globe_camera.position.z += 0.125;
 	}
 	else {
 		controls.update( clock.getDelta() );
+			if ( isMobile.any() ) {
+				dev_orient.update();
+			}
 		 hud_sphere.rotation.x = camera.rotation.x;
 		 hud_sphere_y.rotation.y = camera.rotation.y;
 		 hud_sphere_z.rotation.z = camera.rotation.z;
 		 globe_camera.position = camera.position;
-		 globe_camera.position.z = 24.0;
+		 globe_camera.position.z = 44.0;
 	}
 
 	if ( camera.position.y < 21.0) {
@@ -399,9 +403,6 @@ function render() {
 		camera.position.y = 20.0;
 	}
 	
-	if ( isMobile.any() ) {
-		dev_orient.update();
-	}
 	
 	water.material.uniforms.time.value += .0022251;
 	water.render();

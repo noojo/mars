@@ -1,93 +1,90 @@
-			body {
-				color: #ffffff;
-				font-family: Verdana, sans-serif;
-				font-size: 8pt;
-				text-align: center;
+body {
+	color: #ffffff;
+	font-family: Verdana, sans-serif;
+	font-size: 8pt;
+	text-align: center;
 
-				background-color: #000000;
-				margin: 0;
-				overflow: hidden;
-			}
+	background-color: #000000;
+	margin: 0;
+	overflow: hidden;
+}
 
-			#info {
-				position: absolute;
-				top: 0px; width: 100%;
-				padding: 5px;
-			}
+#info {
+	position: absolute;
+	top: 0px; width: 100%;
+	padding: 5px;
+}
 
-			a {
+a {
 
-				color: #a06851;
-			}
+	color: #a06851;
+}
 
-			.hud {
-				color: rgba(250,250,250, 1.0);
-				font-size: 1.0em;
-				background-color: rgba(0,150,185,.3);
-				border: solid 2px rgba(250,250,250,.5);
-				
-				width: 96%;
-				height: 8.0em;
-				position: absolute;
+.hud {
+	color: rgba(250,250,250, 1.0);
+	font-size: 1.0em;
+	background-color: rgba(0,150,185,.3);
+	border: solid 2px rgba(250,250,250,.5);
+	
+	width: 96%;
+	height: 8.0em;
+	position: absolute;
 
-				border-radius: 10px 10px 10px 10px;
-				visibility: visible;
-				padding: 8px;
-				margin: 8px;
-				
-				text-align: left;
-				z-index: 10;
-				list-style-type: circle;
-				overflow: hidden;
-			}
+	border-radius: 10px 10px 10px 10px;
+	visibility: visible;
+	padding: 8px;
+	margin: 8px;
+	
+	text-align: left;
+	z-index: 10;
+	list-style-type: circle;
+	overflow: hidden;
+}
 
-			.hudlet {
-				display: inline-block;
-				border: solid 2px rgba(250,250,250,.5);
-				padding: 4px;
-				padding-left: 8px;
-				padding-right: 8px;
-				height: 7em;
-				min-height: 7em;
-				max-width: 300px;
-				overflow: hidden;
-				border-radius: 4px;
-				background-color: rgba(50,50,55,.3);
-			}
+.hudlet {
+	font-size: 1.0em;
+	display: inline-block;
+	border: solid 2px rgba(250,250,250,.5);
+	padding: 4px;
+	padding-left: 8px;
+	padding-right: 8px;
+	height: 7.0em;
+	min-height: 7.0em;
+	max-width: 300px;
+	overflow: hidden;
+	border-radius: 4px;
+	background-color: rgba(50,50,55,.3);
+	line-height: 7.0em;
+}
 
-			.hudgauge {
-				font-size: 3.0em;
-			}
+.hudgauge {
+	font-size: 3.0em;
+}
 
-			.hudlabel {
-				text-align: center;
-			}
+.hudlabel {
+	text-align: center;
+}
 
-			.hudoff {
-				color: rgb(200,100,20);
-			}
+.hudoff {
+	color: rgb(200,100,20);
+}
 
-			#barr {
-				background-color: rgb(200,100,50);
-				min-width: 50px;
-				max-height: 1.0em;
-				margin: 4px;
-				background: linear-gradient(to top, rgba(220,80,20,0), rgba(220,80,20,1));
-			}
+#barr {
+	background-color: rgb(200,100,50);
+	min-width: 50px;
+	max-height: 1.0em;
+	margin: 4px;
+	background: linear-gradient(to top, rgba(220,80,20,0), rgba(220,80,20,1));
+}
 
-			#blank {
-				background-color: rgb(200,100,50);
-				min-width: 30px;
-				
-				margin: 4px;
-				background: linear-gradient(to top, rgba(20,210,220,1), rgba(20,210,220,0));
-			}
+#blank {
+	background-color: rgb(200,100,50);
+	min-width: 30px;	
+	margin: 4px;
+	background: linear-gradient(to top, rgba(20,210,220,1), rgba(20,210,220,0));
+}
 
-			#globe {
-/*				position: absolute;
-				z-index: 3;*/
-				min-width: 70px;
-				
-				/*top: 200px;*/
-				background-color: rgba(0,150,185,.3);
-			}
+#globe {
+	min-width: 70px;
+	background-color: rgba(50,50,55,.4);
+}
