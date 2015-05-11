@@ -93,7 +93,7 @@ var pw = 90;
 var ph = 88;
 var start_row = 9;
 var start_col = 9;
-var tiles = 2;
+var tiles = 8;
 var tiles_dl = 0;
 
 var sky, sunSphere;
@@ -289,7 +289,7 @@ function init() {
 	
 	globe_container.appendChild(globe_renderer.domElement);
 
-	setTimeout(watchTiles, 2000);
+	//setTimeout(watchTiles, 2000);
 
 }
 
@@ -312,15 +312,16 @@ function watchTiles(e) {
 }
 
 function addline(e, d) {
-  var list = d.querySelectorAll('li');
-  var x = document.createElement('li');
-  x.innerHTML = e;
-  d.appendChild(x);
+	return;
+  // var list = d.querySelectorAll('li');
+  // var x = document.createElement('li');
+  // x.innerHTML = e;
+  // d.appendChild(x);
   
-  for (var n=0; n < list.length; n++) {
-    list[n].style.color = '#d1c4bb';
-  }
-  d.scrollTop = d.scrollHeight;
+  // for (var n=0; n < list.length; n++) {
+  //   list[n].style.color = '#d1c4bb';
+  // }
+  // d.scrollTop = d.scrollHeight;
 
 }
 
@@ -399,8 +400,8 @@ function render() {
 		first_time = false;
 	}
 
-	if (camera.position.y < 20.0) {
-		camera.position.y = 20.0;
+	if (camera.position.y < 10.0) {
+		camera.position.y = 10.0;
 	}
 	
 	
@@ -408,7 +409,7 @@ function render() {
 	water.render();
 
 	uniforms.amplitude.value = Math.sin(frame);// * 1.2;
-	barr.style.height = Math.abs((uniforms.amplitude.value * 2.0)) + 'em';
+	//barr.style.height = Math.abs((uniforms.amplitude.value * 2.0)) + 'em';
 	hud_blank.style.height = 1.5 - (camera.position.y/500.0 * 1.2) + 'em';
 	frame += 0.01;
 
