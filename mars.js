@@ -93,7 +93,7 @@ var pw = 90;
 var ph = 88;
 var start_row = 9;
 var start_col = 9;
-var tiles = 2;
+var tiles = 10;
 var tiles_dl = 0;
 
 var sky, sunSphere;
