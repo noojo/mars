@@ -24,9 +24,9 @@ On the desktop, you can look around with the mouse, left button moves forward, r
 On mobile, the accelerometers kick in and will orient the scene based on orientation of the phone. Touch the screen to move forward. 
 
 ####Demo
-[Desktop Version](http://noojo.com/labs/git/mars/mars_aws.html)
-[Mobile Version)(http://noojo.com/labs/git/mars/mars_mobile.html)
-[Google Cardboard Version/Stereoscopic](http://noojo.com/labs/git/mars/mars_stereo.html)
+* [Desktop Version](http://noojo.com/labs/git/mars/mars_aws.html)
+* [Mobile Version](http://noojo.com/labs/git/mars/mars_mobile.html)
+* [Google Cardboard Version/Stereoscopic](http://noojo.com/labs/git/mars/mars_stereo.html)
 
 ####Next:
 
